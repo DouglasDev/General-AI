@@ -138,12 +138,12 @@ let programActions = [
 let allExpressions = [
 	(expression1,expression2)=>add(expression1,expression2),
 	(expression1,expression2)=>subtract(expression1,expression2),
-	(expression1,expression2,condition)=>ternary(condition,expression1,expression2),
 	(expression1,expression2)=>callFunction('fib',expression1,expression2),
-	-1,0,1,"a","b","c"
+	(expression1,expression2,condition)=>ternary(condition,expression1,expression2),
+	"a","b","c",-1,0,1
 ]
 
-let NonRecursiveExpression = [-1,0,1,"a","b","c"]
+let NonRecursiveExpression = ["a","b","c",-1,0,1]
 //////////
 
 let conditions=[lesser,greater,equals]
