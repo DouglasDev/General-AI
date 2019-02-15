@@ -1,159 +1,242 @@
-function evaulateExpression(expression){
-	if (typeof expression == "function") return expression()
-	else return expression
-}
-
-//only take expressions
-function returnVal(expression){
-	return "return "+ evaulateExpression(expression)
-}
-
-function equals(expression1,expression2){
-	return evaulateExpression(expression1) +' == ' + evaulateExpression(expression2)
-}
-
-function greater(expression1,expression2){
-	return evaulateExpression(expression1) +' > ' + evaulateExpression(expression2)
-}
-
-function lesser(expression1,expression2){
-	return evaulateExpression(expression1) +' < ' + evaulateExpression(expression2)
-}
-
-function add(expression1,expression2){
-	return evaulateExpression(expression1) + " + " + evaulateExpression(expression2)
-}
-
-function subtract(expression1,expression2){
-	return evaulateExpression(expression1) + " - " + evaulateExpression(expression2)
-}
-
-//take arg other than expression
-function declare(variable,expression){
-	return "let "+variable+" = "+ evaulateExpression(expression)
-}
-
-function assign(variable,expression){
-	return variable+" = "+ evaulateExpression(expression)
-}
-
-function ternary(condition,trueExpression,elseExpression){
-	return evaulateExpression(condition) + " ? " + evaulateExpression(trueExpression) + " : " + evaulateExpression(elseExpression)
-}
-
-function callFunction(functionName,expression1,expression2){
-	return functionName +"("+ evaulateExpression(expression1) + ")"
-	// expression2=evaulateExpression(expression2)
-	// return functionName +"("+ expression1 + ", " + expression2 + ")"
-}
-
-function pushToArray(arr,expression){
-	return arr + ".push(" + evaulateExpression(expression) + ")"
-}
-
-function doNothing(){
-	return ""
-}
-
-//selector functions
-function chooseRandomFromArr(arr){
-	return arr[Math.round(Math.random()*(arr.length-1))]
-}
-
-function chooseExpression(){
-	if (0<opsLeft) {
-		opsLeft--
-		return chooseRandomFromArr(allRandomExpressions)()
+class Node{
+	constructor(category,type,val,children){
+		this.category = category
+		this.type=type
+		this.val=val
+		if (children) this.children=children
+		else this.children=[]
 	}
-	else return chooseRandomFromArr(randomNonRecursiveExpression)()
+	addChild(node){
+		this.children.push(node)
+	}
+	addChildInRandomPosition(node){
+		if (this.children.length === 0) {
+			this.children = [node]
+		} else {
+			let randIndex = nSidedDie(this.children.length + 1)
+			this.children= this.children
+				.slice(0,randIndex)
+				.concat([node])
+				.concat(this.children.slice(randIndex))
+		}
+	}
+	output(){
+		console.log(this.type,this.val,this.children)
+	}
+}
+
+let opsLeft
+let currentGeneration=[]
+
+
+function startEvolving(){
+	for(let i=0;i<500;i++){
+		let treeRoot = generateSeedTree(20)
+		let program = generateSeedProgram(treeRoot)
+		let output = evaluateProgram(program)
+		if (output) {
+			console.log(treeRoot)
+			console.log(program)
+			console.log('output: ',output)
+			let fitVal = fitness([1,1,2,3,5,8,13,21,34,55],output)
+			currentGeneration.push(
+				{"tree":treeRoot,
+				"fitness":fitVal
+				}
+			)
+		}
+	}
+
+	for (let gen=0;gen<10;gen++){
+		console.log('genNumber ',gen)
+		currentGeneration= evolveNextGeneration(currentGeneration)
+	}
+}
+
+startEvolving()
+
+function evolveNextGeneration(prevGeneration){
+	let totalFitness = 0
+	prevGeneration.forEach(program=>{
+		if (program.fitness) totalFitness+=program.fitness
+	})
+	let avgFitness = totalFitness/prevGeneration.length
+	console.log('avgFitness ',avgFitness)
+
+	let sortedGen = prevGeneration.sort((a,b)=>{return b.fitness - a.fitness})
+
+	//console.log(sortedGen)
+	let nextGen=[],index=0
+	for (let i=0;i<400;i++){
+		if (i%20==0)index+=1
+		if (!sortedGen[index]) {
+			index+=1
+			continue
+		}
+		let mutatedSurvivorTree = selectMutationType(sortedGen[index].tree,10,5)
+		if (mutatedSurvivorTree){
+			let program = generateSeedProgram(mutatedSurvivorTree)
+			let output = evaluateProgram(program)
+			if (output) {
+				//console.log(treeRoot)
+				//console.log(program)
+				//console.log('output: ',output)
+				let fitVal = fitness([1,1,2,3,5,8,13,21,34,55],output)
+				nextGen.push(
+					{"tree":mutatedSurvivorTree,
+					"fitness":fitVal
+					}
+				)
+			}
+		}
+	}
+//		nextGen.push(selectMutationType(sortedGen[index].tree,10,5))
+
+	//console.log(nextGen)
+	return nextGen
 }
 
 
-function chooseRandomVar(){
-	let allowedVariables=['a','b','c']
-	return chooseRandomFromArr(allowedVariables)
+
+
+
+function evaluateProgram(program){
+	try{
+		let output= new Function(program)
+		return output()
+	}
+	catch(error){
+		return undefined
+	}
 }
 
-function chooseRandomNum(){
-	let allowedNums=[-1,0,1]
-	return chooseRandomFromArr(allowedNums)
+function generateSeedTree(maxDepth){
+	opsLeft=maxDepth
+	let rootNode= new Node('topLevel',null,[]);
+	while (0<opsLeft){
+		let child=chooseRandomFromArr(programActions)()
+		if (child) rootNode.addChild(child)
+		opsLeft--
+	}
+	return rootNode
 }
 
-function chooseRandomCondition(){
-	return chooseRandomFromArr(conditions)(chooseExpression(),chooseExpression())
+function generateSeedProgram(rootNode){
+	let program='let output = [];\nfunction fib(a){\n'
+	program+=astToText(rootNode)+'}\nfib(10)\n return output'
+	return program
+}
+
+function fitness(modelArr,actual){
+	let fitVal=200 - Math.abs(modelArr.length-actual.length)*10
+	for (let i=0;i<modelArr.length;i++){
+		if (typeof actual[i] == typeof modelArr[i]){
+			fitVal-=Math.abs(modelArr[i]-actual[i])
+		}
+		else{fitVal-=10}
+	}
+	return fitVal
+}
+
+function nSidedDie(n){
+	if (n === 0 || n === 1) return 0;
+	return Math.round(Math.random()*(n-1))
 }
 
 
-//let allExpressions = [add,subtract,ternary,callFunction,chooseExpression,chooseRandomNum,chooseRandomVar]
-//let nonRecursiveExpression = [chooseRandomNum, chooseRandomVar]
-//let allActions=[callFunction,assign,declare,pushToArray]
-
-
-
-//random program
-// let programActions = [
-// 	()=>declare(chooseRandomVar(),chooseExpression()),
-// 	()=>assign(chooseRandomVar(),chooseExpression()),
-// 	()=>callFunction('fib',chooseExpression()),
-// 	()=>returnVal(chooseExpression()),
-// 	()=>ternary(chooseRandomCondition(),chooseExpression(),chooseExpression()),
-// 	()=>pushToArray('output',chooseExpression()),
-// 	()=>doNothing()
-// ]
-
-// let allRandomExpressions = [
-// 	()=>add(chooseExpression,chooseExpression),
-// 	()=>subtract(chooseExpression,chooseExpression),
-// 	()=>ternary(chooseRandomCondition,chooseExpression,chooseExpression),
-// 	()=>callFunction('fib',chooseExpression,chooseExpression),
-// 	()=>chooseRandomNum(),
-// 	()=>chooseRandomVar(),
-// ]
-
-// let randomNonRecursiveExpression = [()=>chooseRandomNum(), ()=>chooseRandomVar()]
-
-// let conditions=[lesser,greater,equals]
-
-// let program='function fib(a){\n'
-// let opsLeft=10
-
-// while (0<opsLeft){	
-// 		program+= chooseRandomFromArr(programActions)()+"\n"
-// 		opsLeft--
-// 	}
-// program+='}\n return output'
+// let treeRoot = generateSeedTree(20)
+// let program = generateSeedProgram(treeRoot)
+// console.log(treeRoot)
 // console.log(program)
+// let mutated = selectMutationType(treeRoot,10,10)
+// console.log(mutated)
+// console.log(generateSeedProgram(mutated))
 
-
-//selectable program
-let programActions = [
-	(expression,variable)=>declare(variable,expression),
-	(expression,variable)=>assign(variable,expression),
-	(expression)=>callFunction('fib',expression),
-	(expression)=>returnVal(expression),
-	(expression)=>pushToArray('output',expression),
-	()=>doNothing()
-]
-
-let allExpressions = [
-	(expression1,expression2)=>add(expression1,expression2),
-	(expression1,expression2)=>subtract(expression1,expression2),
-	(expression1,expression2)=>callFunction('fib',expression1,expression2),
-	(expression1,expression2,condition)=>ternary(condition,expression1,expression2),
-	"a","b","c",-1,0,1
-]
-
-let NonRecursiveExpression = ["a","b","c",-1,0,1]
-//////////
-
-let conditions=[lesser,greater,equals]
-
-let program='function fib(a){\n'
-let opsLeft=10
-
-while (0<opsLeft){	
-		program+= chooseRandomFromArr(programActions)()+"\n"
-		opsLeft--
+function selectMutationType(rootNode,maxDescentDepth,maxAdditionDepth){
+	let choice = nSidedDie(4)
+	if (choice==1) rootNode = MutateTopLevelAction(rootNode,maxDescentDepth)
+	else if (choice==2) {
+		rootNode = MutateLowerLevelExpression(rootNode,maxDescentDepth,maxAdditionDepth)
 	}
-program+='}\n return output'
-console.log(program)
+
+	return rootNode
+}
+
+///action mutations
+function MutateTopLevelAction(rootNode,maxDepth){
+	let choice = nSidedDie(10)
+	if (choice==1) rootNode = deleteRandomAction(rootNode)
+	else if (choice==2) rootNode = replaceRandomAction(rootNode,maxDepth)
+	else if (choice==3) rootNode = addRandomAction(rootNode,maxDepth)
+	return rootNode
+}
+
+function deleteRandomAction(rootNode){
+	let choice = nSidedDie(rootNode.children.length)
+	rootNode.children.splice(choice,1)
+	return rootNode
+}
+
+function addRandomAction(rootNode,maxDepth){
+	opsLeft=maxDepth
+	let child=chooseRandomFromArr(programActions)()
+	if (child) {
+		rootNode.addChildInRandomPosition(child)
+	}
+	return rootNode
+}
+
+function replaceRandomAction(rootNode,maxDepth){
+	opsLeft=maxDepth
+	let child=chooseRandomFromArr(programActions)()
+	let choice = nSidedDie(rootNode.children.length)
+	rootNode.children[choice]=child
+	return rootNode
+}
+
+///expression and conditional mutations
+function MutateLowerLevelExpression(rootNode,maxDescentDepth,maxAdditionDepth){
+	console.log('MutateLowerLevelExpression')
+	if (!rootNode) return
+	let roll = nSidedDie(rootNode.children.length)
+	console.log(roll)
+	let child = rootNode.children[roll]
+	let randomDescentDepth=Math.max(1, nSidedDie(maxDescentDepth))
+	let randomAdditionDepth=nSidedDie(maxAdditionDepth)
+	console.log(rootNode)
+	console.log(child)
+	let newNode = descendToDepthAndMutate(child,randomDescentDepth,randomAdditionDepth)
+	rootNode.children[roll] = newNode
+	return rootNode
+}
+
+function descendToDepthAndMutate(node,descentDepth,AdditionDepth){
+	try{
+		//console.log(node)
+		if (descentDepth>0 && node.children!=null && node.children.length !== 0){
+			let roll = nSidedDie(node.children.length)
+			let child = node.children[roll]
+			if (child == null) debugger
+			roll
+			let deepResult = descendToDepthAndMutate(
+				child,
+				descentDepth-1,
+				AdditionDepth
+			)
+
+			node.children[roll] = deepResult
+			return node
+		}
+		else return mutate(node,AdditionDepth)
+	}
+	catch(error){
+		console.log(error)
+	}
+}
+
+function mutate(node,maxExtraDepth){
+	opsLeft = maxExtraDepth
+	if (node.category=="expression") return chooseExpression()
+	else if (node.category=="condition") return chooseRandomFromArr(conditions)
+	else if (node.category=="conditionParent") return chooseRandomCondition()
+}
