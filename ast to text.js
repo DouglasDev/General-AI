@@ -51,20 +51,22 @@ function pushToArrayNode(node){
 	return "output.push(" + evaluateNode(node.children[0]) + ")"
 }
 
-let typeToAction = {'declareNode':declareNode,'assignNode':assignNode,
+let typeToAction = {'ternaryNode':ternaryNode,'declareNode':declareNode,'assignNode':assignNode,
 	'ternaryNode':ternaryNode,'callFunctionNode':callFunctionNode,
 	'pushToArrayNode':pushToArrayNode,'returnValNode':returnValNode}
-let typeToExpression = {'ternaryNode':ternaryNode,'addNode':addNode,'subtractNode':subtractNode,
+let typeToExpression = {'pushToArrayNode':pushToArrayNode,'ternaryNode':ternaryNode,'addNode':addNode,'subtractNode':subtractNode,
 	'callFunctionNode':callFunctionNode}
+//let typeToVarOrNum = {'num':evaluateNode,'val':evaluateNode}
 let typeToCondition = {'lesserNode':lesserNode,'greaterNode':greaterNode,'equalsNode':equalsNode}
 
 function astToText(ast){
 	try{
 		let text = ""
 		ast.children.forEach(child=>{
-			let mapper = {...typeToAction, ...typeToExpression}
-			if (!(child.type in mapper)) debugger
-			text += mapper[child.type](child) + '\n'
+			// let mapper = {...typeToAction, ...typeToExpression, ...typeToVarOrNum}
+			// if (!(child.type in mapper)) debugger
+			// text += mapper[child.type](child) + '\n'
+			text += typeToAction[child.type](child) + '\n'
 		})
 		return text
 	}
