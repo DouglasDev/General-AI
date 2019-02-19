@@ -1,7 +1,6 @@
 # General-AI
 
-![screenshot]
-(https://ibb.co/4sdG0Zy)
+![screenshot](https://ibb.co/4sdG0Zy)
 
 This is an experiment in genetic programming (https://en.wikipedia.org/wiki/Genetic_programming), written in vanilla JavaScript. The user can input any list of integers and the program will attempt to write a JavaScript program that outputs that list.
 
