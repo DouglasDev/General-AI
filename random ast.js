@@ -47,7 +47,8 @@ function ternary(condition,trueExpression,elseExpression){
 }
 
 function callFunction(expression){
-	return new Node('expression','callFunctionNode',null,[evaluateExpression(expression)])
+	return new Node('expression','callFunctionNode',null,
+		[evaluateExpression(expression),evaluateExpression(expression),evaluateExpression(expression)])
 }
 
 function pushToArray(arr,expression){
@@ -88,12 +89,12 @@ function chooseRandomCondition(){
 
 //random seed program
 let programActions = [
-	()=>declare(chooseRandomVar(),chooseExpression()),
+	//()=>declare(chooseRandomVar(),chooseExpression()),
 	()=>assign(chooseRandomVar(),chooseExpression()),
-	()=>callFunction(chooseExpression()),
+	()=>callFunction(chooseExpression(),chooseExpression(),chooseExpression()),
 	()=>returnVal(chooseExpression()),
 	()=>ternary(chooseRandomCondition(),chooseExpression(),chooseExpression()),
-	()=>pushToArray('output',chooseExpression())
+	//()=>pushToArray('output',chooseExpression())
 	//()=>doNothing()
 ]
 
@@ -101,7 +102,7 @@ let allRandomExpressions = [
 	()=>add(chooseExpression,chooseExpression),
 	()=>subtract(chooseExpression,chooseExpression),
 	()=>ternary(chooseRandomCondition,chooseExpression,chooseExpression),
-	()=>callFunction(chooseExpression),
+	()=>callFunction(chooseExpression,chooseExpression,chooseExpression),
 	()=>pushToArray('output',chooseExpression()),
 	()=>chooseRandomNum(),
 	()=>chooseRandomVar(),

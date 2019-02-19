@@ -44,18 +44,30 @@ function ternaryNode(node){
 }
 
 function callFunctionNode(node){
-	return "fib("+ evaluateNode(node.children[0]) + ")"
+	return "fun("+ evaluateNode(node.children[0]) + ", " 
+				 + evaluateNode(node.children[1]) + ", "
+				 + evaluateNode(node.children[2]) + ")"
 }
 
 function pushToArrayNode(node){
 	return "output.push(" + evaluateNode(node.children[0]) + ")"
 }
 
-let typeToAction = {'ternaryNode':ternaryNode,'declareNode':declareNode,'assignNode':assignNode,
-	'ternaryNode':ternaryNode,'callFunctionNode':callFunctionNode,
-	'pushToArrayNode':pushToArrayNode,'returnValNode':returnValNode}
-let typeToExpression = {'pushToArrayNode':pushToArrayNode,'ternaryNode':ternaryNode,'addNode':addNode,'subtractNode':subtractNode,
-	'callFunctionNode':callFunctionNode}
+let typeToAction = {
+	'ternaryNode':ternaryNode,
+	'declareNode':declareNode,
+	'assignNode':assignNode,
+	'callFunctionNode':callFunctionNode,
+	'pushToArrayNode':pushToArrayNode,
+	'returnValNode':returnValNode
+}
+let typeToExpression = {
+	'pushToArrayNode':pushToArrayNode,
+	'ternaryNode':ternaryNode,
+	'addNode':addNode,
+	'subtractNode':subtractNode,
+	'callFunctionNode':callFunctionNode
+}
 //let typeToVarOrNum = {'num':evaluateNode,'val':evaluateNode}
 let typeToCondition = {'lesserNode':lesserNode,'greaterNode':greaterNode,'equalsNode':equalsNode}
 

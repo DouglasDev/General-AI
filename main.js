@@ -27,17 +27,30 @@ class Node{
 
 let opsLeft
 let currentGeneration=[]
+let mainLoop,numberOfGenerations=0
+let MODEL = [1,2,3]
 
-function startEvolving(numberOfGenerations){
+
+function startEvolving(){
+	opsLeft=0,currentGeneration=[],mainLoop,numberOfGenerations=0,highestFitness=0;
+	pause()
+	console.clear()
+	let arr=JSON.parse(document.querySelector('input').value)
+	if (!Array.isArray(arr)) return
+	MODEL=arr
+
+	for (let i=5;i>=0;i--){
+		let nextProgram = document.getElementById('program'+i)
+		nextProgram.innerText=""
+	}
+
+
 	for(let i=0;i<500;i++){
-		let treeRoot = generateSeedTree(20,MAX_NUMBER_OF_INITIAL_ACTIONS)
+		let treeRoot = generateSeedTree(MAX_INITIAL_DEPTH,MAX_NUMBER_OF_INITIAL_ACTIONS)
 		let program = generateProgram(treeRoot)
 		let output = evaluateProgram(program)
 		if (output) {
-			//console.log(treeRoot)
-			//console.log(program)
-			//console.log('output: ',output)
-			let fitVal = fitness([1,1,2,3,5,8,13,21,34,55],output)
+			let fitVal = fitness(MODEL,output,program.length)
 			currentGeneration.push(
 				{"tree":treeRoot,
 				"fitness":fitVal
@@ -46,22 +59,47 @@ function startEvolving(numberOfGenerations){
 		}
 	}
 
-	for (let gen=0;gen<numberOfGenerations;gen++){
-		console.log('genNumber ',gen)
+	continueLoop()
+}
+function continueLoop(){
+	pause()
+	mainLoop =  setInterval(function(){
+		genOutput.innerText=numberOfGenerations
 		currentGeneration= evolveNextGeneration(currentGeneration)
-	}
+		numberOfGenerations+=1
+	},0)
 }
 
-const MAX_NUMBER_OF_INITIAL_ACTIONS = 10
+function pause(){
+	clearInterval(mainLoop)
+}
+
+function pushProgramToDiv(program,output,fitness){
+	for (let i=5;i>0;i--){
+		let nextProgram = document.getElementById('program'+i)
+		let prevProgram = document.getElementById('program'+(i-1))
+		nextProgram.innerText=prevProgram.innerText
+	}
+	let firstProgram = document.getElementById('program0')
+	firstProgram.innerText=program+'\n\n output: ['+ output +']\n fitness: '+ fitness
+}
+
+
+
+//const MODEL = [1,1,2,3,5,8]
+const MAX_INITIAL_DEPTH=5
+const MAX_NUMBER_OF_INITIAL_ACTIONS = 6
 //GREATER value = higher mutation rate, minimum val=2
 const MUTATE_LOWER_LEVEL_EXPRESSION_RATE = 4 
 //LOWER value = higher mutation rate, minimum val=2
 const TOP_LEVEL_MUTATION_RATE = 20
-const MAX_DESCENT_DEPTH=4
-const MAX_ADDITION_DEPTH=4
-const NUM_OF_GENERATIONS=400
+const MAX_DESCENT_DEPTH=3
+const MAX_ADDITION_DEPTH=3
+const NUM_OF_GENERATIONS=500
 let highestFitness=0;
-startEvolving(NUM_OF_GENERATIONS)
+
+const fitOutput=document.getElementById("currentFitness")
+const genOutput=document.getElementById("currentGeneration")
 
 
 function evolveNextGeneration(prevGeneration){
@@ -70,12 +108,11 @@ function evolveNextGeneration(prevGeneration){
 		if (program.fitness) totalFitness+=program.fitness
 	})
 	let avgFitness = totalFitness/prevGeneration.length
-	console.log('avgFitness ',avgFitness)
+	fitOutput.innerText=avgFitness
 
 	let sortedGen = prevGeneration.sort((a,b)=>{return b.fitness - a.fitness})
-
-	//console.log(sortedGen)
 	let nextGen=[],index=0
+
 	for (let i=0;i<400;i++){
 		if (i%40==0)index+=1
 		if (!sortedGen[index]) {
@@ -84,36 +121,36 @@ function evolveNextGeneration(prevGeneration){
 		}
 		nextGen.push(sortedGen[index])
 		let mutatedSurvivorTree = selectMutationType(sortedGen[index].tree,MAX_DESCENT_DEPTH,MAX_ADDITION_DEPTH)
-		// if (mutatedSurvivorTree){
-			let program = generateProgram(mutatedSurvivorTree)
-			let output = evaluateProgram(program)
-			if (output) {
-				//console.log(treeRoot)
-				//console.log(program)
-				//console.log('output: ',output)
-				let fitVal = fitness([1,1,2,3,5,8,13,21,34,55],output)
-				if (fitVal>highestFitness){
-					highestFitness=fitVal
-					console.log(program)
-					console.log('output: ',output)
-					console.log("current fittest program: ",fitVal)
-				}
-				nextGen.push(
-					{"tree":mutatedSurvivorTree,
-					"fitness":fitVal
-					}
-				)
+		let program = generateProgram(mutatedSurvivorTree)
+		let output = evaluateProgram(program)
+	
+		if (output) {
+			let fitVal = fitness(MODEL,output,program.length)
+
+			if (fitVal>highestFitness){
+				highestFitness=fitVal
+				pushProgramToDiv(program,output,fitVal)
 			}
-		// }
+			nextGen.push(
+				{"tree":mutatedSurvivorTree,
+				"fitness":fitVal
+				}
+			)
+		}
 	}
-	//nextGen.push(selectMutationType(sortedGen[index].tree,10,5))
-	//console.log(nextGen)
 	return nextGen
 }
 
-
-
-
+function fitness(modelArr,actual,programLength){
+	let fitVal=100 - Math.abs(modelArr.length-actual.length)*5 //- programLength/20
+	for (let i=0;i<modelArr.length;i++){
+		if (typeof actual[i] == typeof modelArr[i]){
+			fitVal-=Math.abs(modelArr[i]-actual[i])*10//*(10-i*2)
+		}
+		else{fitVal-=10}
+	}
+	return fitVal
+}
 
 function evaluateProgram(program){
 	try{
@@ -138,36 +175,15 @@ function generateSeedTree(maxDepth,maxNumberOfActions){
 }
 
 function generateProgram(rootNode){
-	let program='let output = [];\nfunction fib(a){\n'
-	program+=astToText(rootNode)+'}\nfib(10)\n return output'
+	let program='let output = [];\nfunction fun(a,b,c){\n'
+	program+=astToText(rootNode)+'}\nfun('+MODEL.length+',0,0)\n return output'
 	return program
-}
-
-function fitness(modelArr,actual){
-	let fitVal=200 - Math.abs(modelArr.length-actual.length)*10
-	for (let i=0;i<modelArr.length;i++){
-		if (typeof actual[i] == typeof modelArr[i]){
-			fitVal-=Math.abs(modelArr[i]-actual[i])
-		}
-		else{fitVal-=10}
-	}
-	return fitVal
 }
 
 function nSidedDie(n){
 	if (n === 0 || n === 1) return 0;
 	return Math.round(Math.random()*(n-1))
 }
-
-
-// let treeRoot = generateSeedTree(20)
-// let program = generateProgram(treeRoot)
-// console.log(treeRoot)
-// console.log(program)
-// let mutated = selectMutationType(treeRoot,10,10)
-// console.log(mutated)
-// console.log(generateProgram(mutated))
-
 
 function selectMutationType(rootNode,maxDescentDepth,maxAdditionDepth){
 	let choice = nSidedDie(MUTATE_LOWER_LEVEL_EXPRESSION_RATE)
@@ -190,10 +206,7 @@ function MutateTopLevelAction(rootNode,maxDepth){
 
 function deleteRandomAction(rootNode){
 	let choice = nSidedDie(rootNode.children.length)
-	//console.log("deleteRandomAction choice",choice)
-	//console.log("before",rootNode)
 	rootNode.children.splice(choice,1)
-	//console.log("after",rootNode)
 	return rootNode
 }
 
@@ -231,10 +244,8 @@ function descendToDepthAndMutate(node,descentDepth,AdditionDepth){
 
 			let roll = nSidedDie(node.children.length)
 			let child = node.children[roll]
-			// console.log('node.children',node.children,'roll',roll)
-			// console.log('node.children[roll]',node.children[roll])
-			if (node.children.length == 0) debugger
-			roll
+			// if (node.children.length == 0) debugger
+			// roll
 			let deepResult = descendToDepthAndMutate(
 				child,
 				descentDepth-1,
