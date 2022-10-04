@@ -44,9 +44,7 @@ function ternaryNode(node){
 }
 
 function callFunctionNode(node){
-	return "fun("+ evaluateNode(node.children[0]) + ", " 
-				 + evaluateNode(node.children[1]) + ", "
-				 + evaluateNode(node.children[2]) + ")"
+	return "fun("+ evaluateNode(node.children[0])+")"
 }
 
 function pushToArrayNode(node){

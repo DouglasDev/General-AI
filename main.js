@@ -20,16 +20,14 @@ class Node{
 				.concat(this.children.slice(randIndex))
 		}
 	}
-	output(){
-		console.log(this.type,this.val,this.children)
-	}
 }
 
 let opsLeft
 let currentGeneration=[]
 let mainLoop,numberOfGenerations=0
-let MODEL = [1,2,3]
-
+//let MODEL = [1,2,3]
+let MODEL = [1,1,2,3,5,8]
+//document.querySelector('input').value = MODEL
 
 function startEvolving(){
 	opsLeft=0,currentGeneration=[],mainLoop,numberOfGenerations=0,highestFitness=0;
@@ -43,7 +41,6 @@ function startEvolving(){
 		let nextProgram = document.getElementById('program'+i)
 		nextProgram.innerText=""
 	}
-
 
 	for(let i=0;i<500;i++){
 		let treeRoot = generateSeedTree(MAX_INITIAL_DEPTH,MAX_NUMBER_OF_INITIAL_ACTIONS)
@@ -86,15 +83,14 @@ function pushProgramToDiv(program,output,fitness){
 
 
 
-//const MODEL = [1,1,2,3,5,8]
 const MAX_INITIAL_DEPTH=5
 const MAX_NUMBER_OF_INITIAL_ACTIONS = 6
 //GREATER value = higher mutation rate, minimum val=2
-const MUTATE_LOWER_LEVEL_EXPRESSION_RATE = 4 
+const MUTATE_LOWER_LEVEL_EXPRESSION_RATE = 6 
 //LOWER value = higher mutation rate, minimum val=2
-const TOP_LEVEL_MUTATION_RATE = 20
+const TOP_LEVEL_MUTATION_RATE = 4
 const MAX_DESCENT_DEPTH=3
-const MAX_ADDITION_DEPTH=3
+const MAX_ADDITION_DEPTH=4
 const NUM_OF_GENERATIONS=500
 let highestFitness=0;
 
@@ -119,7 +115,23 @@ function evolveNextGeneration(prevGeneration){
 			index+=1
 			continue
 		}
+		//guarantee that top programs from previous gen live on
 		nextGen.push(sortedGen[index])
+		// //add extra seed trees to prevent getting stuck at local minima
+		// if (i%10==0){
+		// 	let seed=generateSeedTree(MAX_INITIAL_DEPTH,MAX_NUMBER_OF_INITIAL_ACTIONS)
+		// 	let program = generateProgram(seed)
+		// //	console.log(program.length)
+		// 	//debugger
+		// 	let output = evaluateProgram(program)
+		// 	if (output){
+		// 		nextGen.push({
+		// 			"tree":seed,
+		// 			"fitness":fitness(MODEL,output,program.length)
+		// 		})
+		// 	}
+		// }
+		//create mutated children
 		let mutatedSurvivorTree = selectMutationType(sortedGen[index].tree,MAX_DESCENT_DEPTH,MAX_ADDITION_DEPTH)
 		let program = generateProgram(mutatedSurvivorTree)
 		let output = evaluateProgram(program)
@@ -141,13 +153,15 @@ function evolveNextGeneration(prevGeneration){
 	return nextGen
 }
 
+
+//TODO: change in the same direction more important than absolute difference
 function fitness(modelArr,actual,programLength){
-	let fitVal=100 - Math.abs(modelArr.length-actual.length)*5 //- programLength/20
+	let fitVal=100 - programLength/20
 	for (let i=0;i<modelArr.length;i++){
-		if (typeof actual[i] == typeof modelArr[i]){
-			fitVal-=Math.abs(modelArr[i]-actual[i])*10//*(10-i*2)
-		}
-		else{fitVal-=10}
+		// if (typeof actual[i] == typeof modelArr[i]){
+			fitVal-=Math.abs(modelArr[i]-actual[i])*(i*5)//*(10-i*2)
+		// }
+		// else{fitVal-=10}
 	}
 	return fitVal
 }
@@ -174,9 +188,17 @@ function generateSeedTree(maxDepth,maxNumberOfActions){
 	return rootNode
 }
 
+let prog= generateSeedTree(20,10)
+console.log(prog)
+console.log(generateProgram(prog))
+
 function generateProgram(rootNode){
-	let program='let output = [];\nfunction fun(a,b,c){\n'
-	program+=astToText(rootNode)+'}\nfun('+MODEL.length+',0,0)\n return output'
+	let program='function fun(a){\n'
+	program+=astToText(rootNode)+'}\nreturn ['
+	for (let i=1;i<=MODEL.length;i++){
+		program+='fun('+i+'),'
+	}
+	program+=']'
 	return program
 }
 
@@ -198,9 +220,9 @@ function selectMutationType(rootNode,maxDescentDepth,maxAdditionDepth){
 //action mutations
 function MutateTopLevelAction(rootNode,maxDepth){
 	let choice = nSidedDie(TOP_LEVEL_MUTATION_RATE)
-	if (choice==2 && rootNode.children.length>1) rootNode = deleteRandomAction(rootNode)
-	else if (choice==1) rootNode = replaceRandomAction(rootNode,maxDepth)
-	else if (choice==0) rootNode = addRandomAction(rootNode,maxDepth)
+	if (choice==4 && rootNode.children.length>1) rootNode = deleteRandomAction(rootNode)
+	else if (choice==3) rootNode = replaceRandomAction(rootNode,maxDepth)
+	else if (choice<=2 ) rootNode = addRandomAction(rootNode,maxDepth)
 	return rootNode
 }
 
