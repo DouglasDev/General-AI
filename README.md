@@ -1,6 +1,6 @@
 # General-AI
 
-[Live Demo](https://douglasdev.github.io/projects/EvolutionScript/index.html)
+[Live Demo](https://douglasdev.github.io/General-AI/)
 
 ![screenshot](https://i.ibb.co/vsYGMx5/evolutionscript.png)
 
